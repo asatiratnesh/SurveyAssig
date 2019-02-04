@@ -1,0 +1,14 @@
+{% extends "mymodel/base.html" %}
+{% block content %}
+
+
+    <a type="button" href="{% url 'addcity' %}" id="sidebarCollapse" class="btn btn-primary text-right">
+        Add City
+    </a>
+    <h3>Cities</h3>
+    <ol class="list-group">
+        {% for city in list_of_cities %}
+            <li class="list-group-item">{{ city.name }}</li>
+        {% endfor %}
+    </ol>
+{% endblock %}
