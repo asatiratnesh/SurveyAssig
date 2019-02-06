@@ -1,0 +1,14 @@
+{% extends 'survey/base.html' %}
+
+{% block content %}
+    <br></br>
+    <div class="card">
+        <ul class="list-group">
+            {% for survey in survey_list_empl %}
+                <li class="list-group-item">
+                    <a href="{% url 'surveyQuestEmployee' survey.survey_id_id %}"> {{ survey.survey_id }}</a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock %}
