@@ -10,6 +10,8 @@ urlpatterns = [
     path('', auth_views.LoginView.as_view(template_name='survey/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(template_name='survey/logged_out.html'), name='logout'),
     path('signup/', views.signup, name='signup'),
+    path('organization/', views.organization, name='organization'),
+
     # path('profile/', views.update_profile, name='profile'),
     path('profile/', views.update_profile, name='profile'),
     url(r'^activate/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
@@ -29,5 +31,6 @@ urlpatterns = [
     path('surveyListEmployee', views.surveyListEmployee, name='surveyListEmployee'),
     url(r'(?P<survey_id>[0-9]+)/surveyQuestEmployee/$', views.surveyQuestEmployee, name='surveyQuestEmployee'),
     url(r'(?P<survey_id>[0-9]+)/saveSurveyAnswers/$', views.saveSurveyAnswers, name='saveSurveyAnswers'),
+    url(r'(?P<survey_id>[0-9]+)/surveyQuestResultEmployee/$', views.surveyQuestResultEmployee, name='surveyQuestResultEmployee'),
 
 ]

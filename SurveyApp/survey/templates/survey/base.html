@@ -34,6 +34,7 @@
       <div class="list-group list-group-flush">
         {% if user.is_authenticated %}
           {% if request.user.is_superuser %}
+            <a href="{% url 'organization' %}" class="list-group-item list-group-item-action bg-light">Organization</a>
             <a href="{% url 'profile' %}" class="list-group-item list-group-item-action bg-light">Profile</a>
             <a href="{% url 'signup' %}" class="list-group-item list-group-item-action bg-light">Employee</a>
             <a href="{% url 'questList' %}" class="list-group-item list-group-item-action bg-light">Questions</a>

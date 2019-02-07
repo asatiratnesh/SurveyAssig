@@ -12,11 +12,11 @@
                         {% if choices|in_category:question.question_id_id %}
                             <ol>
                             {% for choice in choices|in_category:question.question_id_id%}
-                                <li><label><input type="radio" name="{{question.question_id_id}}" value="{{ choice }}"> {{choice}}</label></li>
+                                <li><label><input type="radio" name="{{question.question_id_id}}" value="{{ choice }}" required> {{choice}}</label></li>
                             {% endfor %}
                             </ol>
                         {% else %}
-                            <input type="text" name="{{question.question_id_id}}" class="form-control" placeholder="Enter answer">
+                            <input type="text" name="{{question.question_id_id}}" class="form-control" placeholder="Enter answer" required>
                         {% endif %}
                     </li>
                     {% endfor %}
@@ -31,4 +31,22 @@
         </div>
       </div>
     </form>
+
+    <div class="pagination pagination-lg">
+                <span class="step-links">
+                    {% if survey_questions_list.has_previous %}
+                        <a href="?page=1">&laquo; first</a>
+                        <a href="?page={{ survey_questions_list.previous_page_number }}">previous</a>
+                    {% endif %}
+
+                    <span class="current">
+                        Page {{ survey_questions_list.number }} of {{ survey_questions_list.paginator.num_pages }}.
+                    </span>
+
+                    {% if survey_questions_list.has_next %}
+                        <a href="?page={{ survey_questions_list.next_page_number }}">next</a>
+                        <a href="?page={{ survey_questions_list.paginator.num_pages }}">last &raquo;</a>
+                    {% endif %}
+                </span>
+            </div>
 {% endblock %}
