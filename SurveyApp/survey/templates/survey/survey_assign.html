@@ -1,7 +1,7 @@
 {% extends 'survey/base.html' %}
 
 {% block content %}
-    <h5>Questions List in Survey</h5>
+    <h5>Assign Survey to users</h5>
      <form class="form-horizontal" method="post" action="{% url 'saveAssignSurvey' %}">
           {% csrf_token %}
         <input type="hidden" value="{{survey_id}}" name="survey_id">

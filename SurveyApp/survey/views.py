@@ -18,7 +18,7 @@ from django.core.mail import EmailMessage
 from . import models
 from django.core.paginator import Paginator
 
-@login_required
+@login_required(login_url='login')
 def index(request):
     return render(request, 'survey/index.html')
 
@@ -29,7 +29,7 @@ def index(request):
 #     template_name = 'survey/signup.html'
 
 @user_passes_test(lambda u: u.is_superuser)
-@login_required
+@login_required(login_url='login')
 def signup(request):
     if request.method == 'POST':
         form = SignupForm(request.POST)
@@ -68,7 +68,7 @@ def signup(request):
 
 
 @user_passes_test(lambda u: u.is_superuser)
-@login_required
+@login_required(login_url='login')
 def organization(request):
     if request.method == 'POST':
         organization = Organization()
@@ -80,7 +80,7 @@ def organization(request):
 
 
 @user_passes_test(lambda u: u.is_superuser)
-@login_required
+@login_required(login_url='login')
 def activate(request, uidb64, token):
     try:
         uid = force_text(urlsafe_base64_decode(uidb64))
@@ -126,7 +126,7 @@ def update_profile(request):
 
 
 # Questions curds
-@login_required
+@login_required(login_url='login')
 def questList(request):
     questions_list = Questions_library.objects.all()
     return render(request, 'survey/questions.html', {"questions_list": questions_list})
@@ -137,7 +137,7 @@ class AddQuest(ListView):
     model = models.Questions_library
     template_name = 'survey/add_questions.html'
 
-@login_required
+@login_required(login_url='login')
 def saveQuest(request):
     if request.method == 'POST':
         quest = Questions_library()
@@ -156,7 +156,7 @@ def saveQuest(request):
 
 
 @user_passes_test(lambda u: u.is_superuser)
-@login_required
+@login_required(login_url='login')
 def deleteQuestion(request, quest_id):
     print(id)
     questions_library = get_object_or_404(Questions_library, pk=quest_id)
@@ -165,20 +165,20 @@ def deleteQuestion(request, quest_id):
 
 
 # Survey curd
-@login_required
+@login_required(login_url='login')
 def surveyList(request):
     survey_list = Survey.objects.all()
     return render(request, 'survey/survey.html', {"survey_list": survey_list})
 
 
 @user_passes_test(lambda u: u.is_superuser)
-@login_required
+@login_required(login_url='login')
 def addSurvey(request):
     questions_list = Questions_library.objects.all()
     return render(request, 'survey/add_survey.html', {"questions_list": questions_list})
 
 
-@login_required
+@login_required(login_url='login')
 def surveyQuest(request, survey_id):
     survey_questions_list = Survey_QuesMap.objects.filter(survey_id=survey_id)
     survey_employee_list = SurveyEmployeeMap.objects.filter(survey_id=survey_id)
@@ -187,7 +187,7 @@ def surveyQuest(request, survey_id):
 
 
 @user_passes_test(lambda u: u.is_superuser)
-@login_required
+@login_required(login_url='login')
 def saveSurvey(request):
     if request.method == 'POST':
         surveyObj = Survey()
@@ -204,7 +204,7 @@ def saveSurvey(request):
 
 
 @user_passes_test(lambda u: u.is_superuser)
-@login_required
+@login_required(login_url='login')
 def deleteSurvey(request, survey_id):
     print(id)
     surveyObj = get_object_or_404(Survey, pk=survey_id)
@@ -213,7 +213,7 @@ def deleteSurvey(request, survey_id):
 
 
 @user_passes_test(lambda u: u.is_superuser)
-@login_required
+@login_required(login_url='login')
 def assignSurvey(request, survey_id):
     user_list = User.objects.filter(is_superuser=False)
     print(len(user_list))
@@ -225,30 +225,56 @@ def assignSurvey(request, survey_id):
 def saveAssignSurvey(request):
     if request.POST['emp_id']:
         for employee_id in request.POST.getlist('emp_id'):
-            surveyEmployeeMapObj = SurveyEmployeeMap()
-            surveyEmployeeMapObj.survey_id = get_object_or_404(Survey, pk=request.POST['survey_id'])
-            surveyEmployeeMapObj.empl_id = get_object_or_404(User, pk=employee_id)
-            surveyEmployeeMapObj.save()
+            surveyEmployee = SurveyEmployeeMap.objects.filter(survey_id=request.POST['survey_id'],
+                                                           empl_id=employee_id)
+            if not surveyEmployee:
+                surveyEmployeeMapObj = SurveyEmployeeMap()
+                surveyEmployeeMapObj.survey_id = get_object_or_404(Survey, pk=request.POST['survey_id'])
+                surveyEmployeeMapObj.empl_id = get_object_or_404(User, pk=employee_id)
+                surveyEmployeeMapObj.save()
+                userObj = get_object_or_404(User, pk=employee_id)
+                to_email = userObj.email
+                try:
+                    print("sed")
+                    email_body = "Hi, \n Your Survey Link\n"+request.build_absolute_uri('/')[:-1].strip("/")+"/"+request.POST['survey_id']+"/surveyQuestEmployee/"
+                    email = EmailMessage(
+                        'Survey Assign', email_body, to=[to_email]
+                    )
+                    email.send()
+                except:
+                    print("Email error")
+                finally:
+                    return redirect('surveyList')
 
     return redirect('surveyList')
 
 
 # Employee
-@login_required
+@login_required(login_url='login')
 def surveyListEmployee(request):
     survey_list_empl = SurveyEmployeeMap.objects.filter(empl_id=request.user.id)
     survey_list_assign_empl = list()
+    survey_list_pending_empl = list()
     survey_list_complete_empl = list()
     for survey in survey_list_empl:
-        if Survey_Result.objects.filter(survey=survey.survey_id_id, empl=User.objects.get(id=request.user.id)):
-            survey_list_complete_empl.append(survey)
+        survey_item = Survey_Result.objects.filter(survey=survey.survey_id_id,
+                                                   empl=User.objects.get(id=request.user.id)).count()
+        if survey_item:
+            if Survey_Result.objects.filter(survey=survey.survey_id_id,
+                                                   empl=User.objects.get(id=request.user.id),
+                                            answer_status=True).count():
+                survey_list_complete_empl.append(survey)
+            else:
+                survey_list_pending_empl.append(survey)
         else:
             survey_list_assign_empl.append(survey)
 
     return render(request, 'survey/survey_employee.html', {"survey_list_assign_empl": survey_list_assign_empl,
-                                                           "survey_list_complete_empl": survey_list_complete_empl})
+                                                           "survey_list_complete_empl": survey_list_complete_empl,
+                                                           "survey_list_pending_empl":survey_list_pending_empl})
 
-@login_required
+
+@login_required(login_url='login')
 def surveyQuestEmployee(request, survey_id):
     question_ids = list()
     survey_questions_list = Survey_QuesMap.objects.filter(survey_id=survey_id)
@@ -257,33 +283,41 @@ def surveyQuestEmployee(request, survey_id):
 
     choices = ques_choices.objects.filter(questions_id__in=question_ids)
 
-    paginator = Paginator(survey_questions_list, 3)
-    page = request.GET.get('page')
-    survey_questions = paginator.get_page(page)
+    answer_list = Survey_Result.objects.filter(question_id__in=question_ids, survey_id=survey_id, empl_id=User.objects.get(id=request.user.id))
+    print(answer_list)
+    # paginator = Paginator(survey_questions_list, 3)
+    # page = request.GET.get('page')
+    # survey_questions = paginator.get_page(page)
 
     return render(request, 'survey/survey_questions_list_empl.html', {"survey_id": survey_id,
-                                    "survey_questions_list": survey_questions, 'choices': choices})
+                                    "survey_questions_list": survey_questions_list, 'choices': choices,
+                                    "answer_list": answer_list})
 
-@login_required
+
+@login_required(login_url='login')
 def saveSurveyAnswers(request, survey_id):
     for name in request.POST:
-        if name != "csrfmiddlewaretoken":
+        if name != "csrfmiddlewaretoken" and name != "save":
             isRecord = Survey_Result.objects.filter(survey=Survey.objects.get(id=survey_id),
                                                     empl=User.objects.get(id=request.user.id),
                                                     question=Questions_library.objects.get(id=name))
             if not isRecord:
-                surveyResultObj = Survey_Result()
-                surveyResultObj.survey = Survey.objects.get(id=survey_id)
-                surveyResultObj.empl = User.objects.get(id=request.user.id)
-                surveyResultObj.question = Questions_library.objects.get(id=name)
-                surveyResultObj.answer = request.POST[name]
-                surveyResultObj.answer_status = False
-                surveyResultObj.save()
+                if request.POST[name]:
+                    surveyResultObj = Survey_Result()
+                    surveyResultObj.survey = Survey.objects.get(id=survey_id)
+                    surveyResultObj.empl = User.objects.get(id=request.user.id)
+                    surveyResultObj.question = Questions_library.objects.get(id=name)
+                    surveyResultObj.answer = request.POST[name]
+                    if request.POST["save"] == "finish":
+                        surveyResultObj.answer_status = True
+                    else:
+                        surveyResultObj.answer_status = False
+                    surveyResultObj.save()
 
     return redirect('surveyListEmployee')
 
 
-@login_required
+@login_required(login_url='login')
 def surveyQuestResultEmployee(request, survey_id):
     survey_result_quest = Survey_Result.objects.filter(survey=survey_id, empl=User.objects.get(id=request.user.id))
     paginator = Paginator(survey_result_quest, 5)
